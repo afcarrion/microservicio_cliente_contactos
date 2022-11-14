@@ -7,10 +7,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import service.AccesoService;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @RestController
@@ -19,7 +22,35 @@ public class PersonaController {
     @Autowired
     RestTemplate restTemplate;
 
+    @Autowired
+    AccesoService accesoService;
+
     String url = "http://localhost:8080";
+
+    //Async calls to other microservices
+    @GetMapping(value="/personaAsync/{id}/{nombre}/{email}/{edad}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<Persona> crearPersonaAsync(@PathVariable("id") Integer id,
+                                      @PathVariable("nombre") String nombre,
+                                      @PathVariable("email") String email,
+                                      @PathVariable("edad") Integer edad){
+        Persona persona = new Persona(id,nombre, email, edad);
+        CompletableFuture<List<Persona>> resultado = accesoService.crearPersonaAsyn(persona);
+        for(int i=1;i<50;i++){
+            System.out.println("Metodo del controlador....esperando");
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            System.out.println("********Final Metodo del controlador....esperando*******");
+            return resultado.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     @GetMapping(value="/persona/{id}/{nombre}/{email}/{edad}", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Persona> crearPersona(@PathVariable("id") Integer id,

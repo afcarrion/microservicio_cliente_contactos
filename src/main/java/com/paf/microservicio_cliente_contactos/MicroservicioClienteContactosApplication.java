@@ -5,9 +5,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.client.RestTemplate;
 
-@ComponentScan(basePackages = {"controller"})
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+
+@EnableAsync
+@ComponentScan(basePackages = {"controller","service"})
 @EntityScan(basePackages = {"model"})
 @SpringBootApplication
 public class MicroservicioClienteContactosApplication {
@@ -21,4 +27,8 @@ public class MicroservicioClienteContactosApplication {
         return new RestTemplate();
     }
 
+    @Bean
+    public Executor executor(){
+        return new ThreadPoolTaskExecutor();
+    }
 }
