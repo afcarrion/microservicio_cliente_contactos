@@ -2,10 +2,14 @@ package controller;
 
 import model.Persona;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import service.AccesoService;
 
@@ -58,16 +62,27 @@ public class PersonaController {
                                       @PathVariable("email") String email,
                                       @PathVariable("edad") Integer edad){
         Persona persona = new Persona(id,nombre, email, edad);
-        restTemplate.postForLocation(url+"/contactos", persona);
-        Persona[] personas = restTemplate.getForObject(url+"/contactos", Persona[].class);
-        return Arrays.asList(personas);
+        try {
+            ResponseEntity<Void> respuesta = restTemplate.postForEntity(url+"/contactos", persona, Void.class);
+            HttpHeaders headers = respuesta.getHeaders();
+            int total = Integer.parseInt(headers.get("total").get(0));
+            if(total == 0){
+                return null;
+            }
+            ResponseEntity<Persona[]> personas = restTemplate.getForEntity(url+"/contactos", Persona[].class);
+            return Arrays.asList(personas.getBody());
+        }catch (HttpClientErrorException e){
+            e.printStackTrace();
+            return null;
+        }
+
     }
 
     @GetMapping(value="/persona/{edad1}/{edad2}", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Persona> buscarXEdades(@PathVariable("edad1") int edad1,
                                        @PathVariable("edad2") int edad2){
-        Persona[] personas = restTemplate.getForObject(url+"/contactos", Persona[].class);
-        return Arrays.stream(personas)
+        ResponseEntity<Persona[]> personas = restTemplate.getForEntity(url+"/contactos", Persona[].class);
+        return Arrays.stream(personas.getBody())
                 .filter(p->p.getEdad()>=edad1 && p.getEdad()<=edad2)
                 .collect(Collectors.toList());
     }
